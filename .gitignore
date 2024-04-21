@@ -51,3 +51,6 @@ rsconnect/
 Ejemplos.R
 Introducción.R
 Ejemplos_clustering/*
+Ejemplos_series_temporales/*
+Soluciones/*
+*.docx

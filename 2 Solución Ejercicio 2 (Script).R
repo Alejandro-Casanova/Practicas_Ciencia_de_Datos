@@ -11,6 +11,7 @@ head(Frame0)
 
 # (b) Extraer en el subframe SubFrame0 las variables 'Edad', 'Educacion-num años', 'Raza' y 'Nivel de ingresos'.
 SubFrame0 <-subset.data.frame(Frame0, select=c('Edad', 'Educacion.num.años', 'Raza', 'Nivel.de.ingresos'))
+head(SubFrame0)
 
 # (c) Determinar si en SubFrame0 existen campos no definidos (con contenido ?).
 subset.data.frame(SubFrame0, Edad == "?" | Educacion.num.años == "?" | Raza == "?" | Nivel.de.ingresos == "?")
@@ -26,7 +27,7 @@ range(SubFrame1$Edad); range(SubFrame1$Educacion.num.años)
 # (f) Obtener los valores que pueden tomar las variables 'Raza' y 'Nivel de ingresos'.
 race_names <- unique(SubFrame1$Raza)
 income_classes <- unique(SubFrame1$Nivel.de.ingresos)
-
+race_names; income_classes
 # (g) Obtener la tabla de frecuencias de la variable 'Raza'.
 table(SubFrame1$Raza)
 
@@ -35,15 +36,18 @@ table(SubFrame1$Raza)
 # la variable 'Nivel de ingresos' para que sea representativa en el clustering y la variable 'Raza' para que
 # apenas influya en el clustering.
 race_to_num_mapping <- setNames(1:length(race_names)*1e-8, race_names)
-income_to_num_mapping <- setNames(1:length(income_classes)-1, income_classes)
+income_to_num_mapping <- setNames(1:length(income_classes)*0.5, income_classes)
+
 SubFrame2 <- SubFrame1
+
 SubFrame2$Raza <- sapply(SubFrame2$Raza, function(x) race_to_num_mapping[as.character(x)])
+range(SubFrame2$Raza)
+
 SubFrame2$Nivel.de.ingresos <- sapply(SubFrame2$Nivel.de.ingresos, function(x) income_to_num_mapping[as.character(x)])
+
+apply(SubFrame2, 2, range)
 head(SubFrame2)
 
-# 2. Clustering y análisis de los resultados
-
-# (a) Calcular mediante el criterio elbow el valor adecuado del núumero de clusters k.
 # Transform into matrix for kmeans
 kmdata_orig = as.matrix(SubFrame2[,1:4])
 kmdata <- kmdata_orig[,1:4]
@@ -51,11 +55,18 @@ mode(kmdata) = "numeric"
 kmdata[1:10,]
 
 # Scale data
+# We'll scale all variables so they range from 0 to 1
 max_val = numeric(2)
+min_val = numeric(2)
 for (k in 1:2) max_val[k] <- max(as.numeric(kmdata[,k]))
-kmdata[,1:2] <- scale(kmdata[,1:2], center=FALSE, scale=max_val)
+for (k in 1:2) min_val[k] <- min(as.numeric(kmdata[,k]))
+kmdata[,1:2] <- scale(kmdata[,1:2], center=min_val, scale=(max_val-min_val))
 kmdata[1:10,]
+apply(kmdata, 2, range)
 
+# 2. Clustering y análisis de los resultados
+
+# (a) Calcular mediante el criterio elbow el valor adecuado del núumero de clusters k.
 # Decide number of clusters
 wss <- numeric(8) 
 for (k in 1:8) wss[k] <- (sum(kmeans(kmdata, centers=k, nstart=25)$withinss))
