@@ -81,8 +81,8 @@ km3
 
 # (c) Obtener las gráficas bidimensionales del clustering 'Edad'-'Educacion-num años', 
 # 'Edad'-'Nivel de ingresos' y 'Educacion-num años'-'Nivel de ingresos'.
-NUM_CLUSTERS <- 2
-km_selected <- km2
+NUM_CLUSTERS <- 3
+km_selected <- km3
 df <- as.data.frame(kmdata)
 df$cluster <- factor(km_selected$cluster)
 centers <- as.data.frame(km_selected$centers)
@@ -92,42 +92,54 @@ library(grid) #gráficos en cuadrícula
 library(gridExtra)
 
 g1 <- ggplot(data=df, aes(x=Edad, y=Educacion.num.años, color=cluster )) + 
-  geom_point() + theme(legend.position="right") +
+  geom_point() +
   geom_point(data=centers, aes(x=Edad, y=Educacion.num.años, color=as.factor(1:NUM_CLUSTERS)), 
              size=10, alpha=.3, show.legend=FALSE)
 
 g2 <- ggplot(data=df, aes(x=Edad, y=Nivel.de.ingresos, color=cluster )) + 
-  geom_point() + 
+  geom_point() + theme(legend.position="none") +
   geom_point(data=centers, aes(x=Edad,y=Nivel.de.ingresos, color=as.factor(1:NUM_CLUSTERS)), 
              size=10, alpha=.3, show.legend=FALSE)
 
 g3 <- ggplot(data=df, aes(x=Educacion.num.años, y=Nivel.de.ingresos, color=cluster )) + 
-  geom_point() +
+  geom_point() + theme(legend.position="none") +
   geom_point(data=centers, aes(x=Educacion.num.años, y=Nivel.de.ingresos, color=as.factor(1:NUM_CLUSTERS)), 
              size=10, alpha=.3, show.legend=FALSE)
 
-grid.arrange(arrangeGrob(grobs=list(g1 + theme(legend.position="none"),
-                                    g2 + theme(legend.position="none"),
-                                    g3 + theme(legend.position="none")),
-                         main ="Adult Population Income Analysis", ncol=2))
+grid.arrange(
+  arrangeGrob(g1 + theme(
+    legend.box.background = element_rect(),
+    legend.box.margin = margin(6, 6, 6, 6))),
+  arrangeGrob(g2, g3, ncol = 2)
+)
 
 # (d) A la vista de las gráficas, describir las propiedades características de cada uno de los clusters obtenidos.
-# Respuesta: Los clusters 1 y 2 agrupan a las personas según su nivel de ingresos. Se puede observar en la primera
-# gráfica la tendencia de que, generalmente, a mayor edad y mayor número de años de educación, también es mayor
-# el nivel de ingresos
+# Respuesta: Los clusters 2 y 3 agrupan a las personas según su edad, pero ambos para un nivel de ingresos
+# bajo. El cluster 1 incluye las personas con un nivel de ingresos alto, que generalmente cuentan con un
+# nivel de estudios también alto. 
 
 # (e) Calcular para cada uno de los clusters la tabla de frecuencia de la variable 'Raza'.
 df_cluster1<-subset.data.frame(df, cluster == 1)$Raza
 df_cluster1 <- sapply(df_cluster1, function(x) names(race_to_num_mapping[as.numeric(round(x*1e08))]))
 df_cluster2<-subset.data.frame(df, cluster == 2)$Raza
 df_cluster2 <- sapply(df_cluster2, function(x) names(race_to_num_mapping[as.numeric(round(x*1e08))]))
-table(df_cluster1); round(prop.table(table(df_cluster1))*100, 2) # Cluster 1 (<=50k)
-table(df_cluster2); round(prop.table(table(df_cluster2))*100, 2) # Cluster 2 (>50k)
+df_cluster3<-subset.data.frame(df, cluster == 3)$Raza
+df_cluster3 <- sapply(df_cluster3, function(x) names(race_to_num_mapping[as.numeric(round(x*1e08))]))
+table(df_cluster1); round(prop.table(table(df_cluster1))*100, 2) # Cluster 1 (>50k)
+table(df_cluster2); round(prop.table(table(df_cluster2))*100, 2) # Cluster 2 (<50k, old)
+table(df_cluster3); round(prop.table(table(df_cluster3))*100, 2) # Cluster 3 (<50k, young)
+
 table(SubFrame1$Raza); round(prop.table(table(SubFrame1$Raza))*100, 2) # Overall
-round(table(df_cluster2) / table(SubFrame1$Raza) * 100, 2) # High income percentage per race
+
+round(table(df_cluster1) / table(SubFrame1$Raza) * 100, 2) # High income percentage per race
+
+round((prop.table(table(df_cluster1)) - prop.table(table(SubFrame1$Raza))) / prop.table(table(SubFrame1$Raza))*100, 2)
+round((prop.table(table(df_cluster2)) - prop.table(table(SubFrame1$Raza))) / prop.table(table(SubFrame1$Raza))*100, 2)
+round((prop.table(table(df_cluster3)) - prop.table(table(SubFrame1$Raza))) / prop.table(table(SubFrame1$Raza))*100, 2)
 
 # (f) Comparar las tablas de frecuencia anteriores con la tabla de frecuencias de la variable 'Raza' obtenida en la sección anterior.
-# Respuesta: se puede observar que en el cluster 1, que agrupa las personas con menor nivel de ingresos, la proporción de personas de raza 
-# blanca es menor que en el cluster 2. Mientras que la proporción del resto de razas es generalmente mayor en el
-# cluster 1 (la única excepción es la raza "asian-pacific-islander". De la misma forma, la proporción de pertenencia
-# al cluster 2, por razas, es mayor para las razas blanca y asiático-pacífica.
+# Respuesta: Como conclusión, hemos observado que las razas más favorecidas económicamente, y 
+# con mayor nivel de estudios son 'Asian-Pac-Islander' y 'White', frente a las razas 
+# 'Amer-Indian-Eskimo', 'Black' y 'Other' que presentan generalmente un nivel de ingresos 
+# y de estudios menor. La edad no parece tener una influencia tan relevante en el nivel de 
+# ingresos como sí el nivel educativo y la raza.
