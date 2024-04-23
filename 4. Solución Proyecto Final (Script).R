@@ -27,7 +27,7 @@ sapply(SubFrame0[1,], class) # Comprobar el tipo de dato de las variables
 
 # Mapeamos a números las distintas regiones
 region_names <- unique(SubFrame0$region)
-region_names
+head(region_names)
 region_to_num_mapping <- setNames(1:length(region_names)*1e-8, region_names)
 
 # Creamos un nuevo frame y comenzamos la conversión de los tipos de las diferentes variables
@@ -43,15 +43,17 @@ SubFrame2 <- subset.data.frame(SubFrame1, !is.na(price) & !is.na(rating) & !is.n
 apply(SubFrame2, 2, range) # Comprobar el rango de las variables
 
 # Transform into matrix for kmeans
-kmdata = as.matrix(SubFrame2[,1:4])
-mode(kmdata) = "numeric"
-head(kmdata)
+kmdata_orig = as.matrix(SubFrame2[,1:4])
+mode(kmdata_orig) = "numeric"
+head(kmdata_orig)
 
 # (e) Valorar si es necesario realizar un escalado de algunos de los datos: price, rating, acidity.
 # Será importante realizar un escalado de la variable precio, debido a la gran magnitud de su rango
 # de valores. De todos modos,las tres variables tienen unidades distintas, y aunque no sea tan 
 # crítico para las variables 'rating' y 'acidity', también normalizaremos éstas.
 NUM_VAL <- 3
+kmdata <- kmdata_orig
+#kmdata[,1] <- sapply(kmdata[,1], sqrt) # Apply sqrt to ponderate price
 max_val = numeric(NUM_VAL)
 min_val = numeric(NUM_VAL)
 for (k in 1:NUM_VAL) max_val[k] <- max(as.numeric(kmdata[,k]))
@@ -77,7 +79,7 @@ km3
 # Seleccionamos k=3
 NUM_CLUSTERS <- 3
 km_selected <- km3
-df <- as.data.frame(kmdata)
+df <- as.data.frame(kmdata) 
 df$cluster <- factor(km_selected$cluster)
 centers <- as.data.frame(km_selected$centers)
 
@@ -85,7 +87,7 @@ centers <- as.data.frame(km_selected$centers)
 df$region <- sapply(df$region, function(x) names(region_to_num_mapping[as.numeric(round(x*1e08))]))
 for (k in 1:NUM_VAL) df[,k] <- df[,k] * (max_val[k] - min_val[k]) + min_val[k] # Unscale
 for (k in 1:NUM_VAL) centers[,k] <- centers[,k] * (max_val[k] - min_val[k]) + min_val[k] # Unscale centers
-apply(df, 2, range) # Comprobar el rango de las variables
+apply(df[,1:3], 2, range) # Comprobar el rango de las variables
 centers
 
 # Dibujamos las gráficas calidad-precio, acidez-calidad y acidez-precio
@@ -110,6 +112,16 @@ plotGraphs <- function(df, centers){
     geom_point(data=centers, aes(x=acidity, y=price, color=as.factor(1:NUM_CLUSTERS)), 
                size=10, alpha=.6, show.legend=FALSE)
   
+  g4 <- ggplot(data=df, aes(x=region, y=price, color=cluster )) + 
+    geom_point() + theme(axis.text.x=element_blank())
+    #geom_point(data=centers, aes(x=region, y=price, color=as.factor(1:NUM_CLUSTERS)), 
+    #           size=10, alpha=.6, show.legend=FALSE)
+  
+  g5 <- ggplot(data=df, aes(x=region, y=rating, color=cluster )) + 
+    geom_point() + theme(axis.text.x=element_blank())
+    #geom_point(data=centers, aes(x=region, y=rating, color=as.factor(1:NUM_CLUSTERS)), 
+    #           size=10, alpha=.6, show.legend=FALSE)
+  
   grid.arrange(
     arrangeGrob(g1 + theme(
       legend.box.background = element_rect(),
@@ -119,7 +131,7 @@ plotGraphs <- function(df, centers){
                 ncol = 2)
   )
   
-  return(list(g1,g2,g3))
+  return(list(g1,g2,g3,g4,g5))
 }
 
 plotSingleGraph <- function(gg_element){
@@ -132,6 +144,8 @@ g_i <- plotGraphs(df, centers)
 plotSingleGraph(g_i[[1]])
 plotSingleGraph(g_i[[2]])
 plotSingleGraph(g_i[[3]])
+plotSingleGraph(g_i[[4]])
+plotSingleGraph(g_i[[5]])
 
 # (g) Repite el proceso solo para los vinos de denominación "Rioja".
 SubFrame_rioja <- subset.data.frame(SubFrame2, names(region_to_num_mapping[as.numeric(round(region*1e08))]) == 'Rioja')
@@ -177,7 +191,7 @@ centers_rioja <- as.data.frame(km_selected_r$centers)
 df_rioja$region <- sapply(df_rioja$region, function(x) names(region_to_num_mapping[as.numeric(round(x*1e08))]))
 for (k in 1:NUM_VAL) df_rioja[,k] <- df_rioja[,k] * (max_val_rioja[k] - min_val_rioja[k]) + min_val_rioja[k] # Unscale
 for (k in 1:NUM_VAL) centers_rioja[,k] <- centers_rioja[,k] * (max_val_rioja[k] - min_val_rioja[k]) + min_val_rioja[k] # Unscale centers
-apply(df_rioja, 2, range) # Comprobar el rango de las variables
+apply(df_rioja[,1:3], 2, range) # Comprobar el rango de las variables
 centers_rioja
 
 g_i_rioja <- plotGraphs(df_rioja, centers_rioja)
@@ -187,9 +201,53 @@ plotSingleGraph(g_i_rioja[[3]])
 
 # (h) Estudia las características de los clústeres obtenidos y comenta las
 #     observaciones y conclusiones que se pueden extraer.
+
+# Cálculo de las proporciones de la variable 'region' para el dataset completo
 region_frame <- sapply(SubFrame2$region, function(x) names(region_to_num_mapping[as.numeric(round(x*1e08))]))
 my_table <- table(region_frame) 
 my_table_sorted <- my_table[order(my_table, decreasing=TRUE)]
 head(my_table_sorted)
+barplot(my_table_sorted[1:5])
 my_prop_table <- round(prop.table(my_table_sorted)*100, 2) # Overall
 head(my_prop_table)
+sum(my_prop_table[1:5])
+barplot(my_prop_table[1:5])
+
+# Cálculo de las proporciones de la variable 'region' los vinos más caros (>400€)
+df2 <- SubFrame2
+df2$region <- sapply(SubFrame2$region, function(x) names(region_to_num_mapping[as.numeric(round(x*1e08))]))
+df3 <- subset.data.frame(df2, price <= 600)
+df4 <- subset.data.frame(df2, price <= 100)
+df5 <- subset.data.frame(df2, price >= 500)
+sapply(df5[1:3], mean)
+my_table_2 <- table(df5$region)
+my_table_sorted_2 <- my_table_2[order(my_table_2, decreasing=TRUE)]
+my_prob_table_2 <- round(prop.table(my_table_sorted_2)*100, 2)
+barplot(my_prob_table_2[1:5])
+
+hist(df4$price,
+     main="Precios de los vinos del dataset completo",
+     xlab="Euros (€)")
+
+# Histograma de precios
+hist_info <- hist(SubFrame2$price,
+     main="Histograma de precios de los vinos",
+     xlab="Euros (€)",
+     xlim=c(0,500),
+     breaks=c(seq(0,500,10),5000),
+     #breaks=c(0, 100, 200, 500, 5000),
+     plot = TRUE,
+     freq = FALSE)
+
+hist_info$density <- hist_info$counts /    # Compute density values
+  sum(hist_info$counts) * 100
+plot(hist_info, main="Precios de los vinos del dataset completo",
+     xlab="Euros (€)",
+     xlim=c(0,5000), freq = FALSE)   
+
+hist_info$density <- cumsum(hist_info$density) 
+plot(hist_info)
+hist_info
+
+hist(df_rioja$price)
+      
