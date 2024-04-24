@@ -41,6 +41,8 @@ apply(SubFrame1, 2, range) # Comprobar el rango de las variables
 # (d) Eliminar aquellas filas que no contengan datos o que no estén disponibles.
 SubFrame2 <- subset.data.frame(SubFrame1, !is.na(price) & !is.na(rating) & !is.na(acidity) & !is.na(region))
 apply(SubFrame2, 2, range) # Comprobar el rango de las variables
+apply(SubFrame2[1:3], 2, mean)
+apply(SubFrame2[1:3], 2, median)
 
 # Transform into matrix for kmeans
 kmdata_orig = as.matrix(SubFrame2[,1:4])
@@ -192,6 +194,8 @@ df_rioja$region <- sapply(df_rioja$region, function(x) names(region_to_num_mappi
 for (k in 1:NUM_VAL) df_rioja[,k] <- df_rioja[,k] * (max_val_rioja[k] - min_val_rioja[k]) + min_val_rioja[k] # Unscale
 for (k in 1:NUM_VAL) centers_rioja[,k] <- centers_rioja[,k] * (max_val_rioja[k] - min_val_rioja[k]) + min_val_rioja[k] # Unscale centers
 apply(df_rioja[,1:3], 2, range) # Comprobar el rango de las variables
+apply(df_rioja[,1:3], 2, mean) # Comprobar el rango de las variables
+apply(df_rioja[,1:3], 2, median) # Comprobar el rango de las variables
 centers_rioja
 
 g_i_rioja <- plotGraphs(df_rioja, centers_rioja)
@@ -211,19 +215,26 @@ barplot(my_table_sorted[1:5])
 my_prop_table <- round(prop.table(my_table_sorted)*100, 2) # Overall
 head(my_prop_table)
 sum(my_prop_table[1:5])
-barplot(my_prop_table[1:5])
+barplot(my_prop_table[1:5], 
+        main = "Proporciones de los 5 vinos más frecuentes",
+        ylab = "porcentaje del total (%)",
+        xlab= "denominación de origen",
+        ylim = c(0, 35))
 
-# Cálculo de las proporciones de la variable 'region' los vinos más caros (>400€)
+# Cálculo de las proporciones de la variable 'region' los vinos más caros (>500€)
 df2 <- SubFrame2
 df2$region <- sapply(SubFrame2$region, function(x) names(region_to_num_mapping[as.numeric(round(x*1e08))]))
 df3 <- subset.data.frame(df2, price <= 600)
 df4 <- subset.data.frame(df2, price <= 100)
-df5 <- subset.data.frame(df2, price >= 500)
+df5 <- subset.data.frame(df2, price >= 100)
 sapply(df5[1:3], mean)
 my_table_2 <- table(df5$region)
 my_table_sorted_2 <- my_table_2[order(my_table_2, decreasing=TRUE)]
-my_prob_table_2 <- round(prop.table(my_table_sorted_2)*100, 2)
-barplot(my_prob_table_2[1:5])
+#my_prob_table_2 <- round(prop.table(my_table_sorted_2)*100, 2)
+my_table_sorted_2
+par(mar=c(7,3,3,1)+.1)
+barplot(my_table_sorted_2, cex.names = 0.8, 
+        las=2, main = "Tabla de Frecuencias de los Vinos más Caros (>500€)")
 
 hist(df4$price,
      main="Precios de los vinos del dataset completo",
@@ -250,4 +261,5 @@ plot(hist_info)
 hist_info
 
 hist(df_rioja$price)
+
       
