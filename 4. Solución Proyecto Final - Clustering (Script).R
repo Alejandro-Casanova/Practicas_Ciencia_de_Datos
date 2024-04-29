@@ -7,7 +7,7 @@
 # 1. Clustering
 
 # (a) Instalar el paquete Tidyverse.
-# install.packages("tidyverse")
+# install.packages("tidyverse") # install if necessary
 library(tidyverse)
 
 # (b) Cargar el fichero en un dataframe, considerando el tipo de separador adecuado.
@@ -56,6 +56,7 @@ head(kmdata_orig)
 NUM_VAL <- 3
 kmdata <- kmdata_orig
 #kmdata[,1] <- sapply(kmdata[,1], sqrt) # Apply sqrt to ponderate price
+#kmdata[,1] <- sapply(kmdata_orig[,1], log) # Apply log to ponderate price
 max_val = numeric(NUM_VAL)
 min_val = numeric(NUM_VAL)
 for (k in 1:NUM_VAL) max_val[k] <- max(as.numeric(kmdata[,k]))
@@ -89,6 +90,8 @@ centers <- as.data.frame(km_selected$centers)
 df$region <- sapply(df$region, function(x) names(region_to_num_mapping[as.numeric(round(x*1e08))]))
 for (k in 1:NUM_VAL) df[,k] <- df[,k] * (max_val[k] - min_val[k]) + min_val[k] # Unscale
 for (k in 1:NUM_VAL) centers[,k] <- centers[,k] * (max_val[k] - min_val[k]) + min_val[k] # Unscale centers
+#df$price <- sapply(df$price, exp) # Apply exp to reverse log
+#centers$price <- sapply(centers$price, exp) # Apply exp to reverse log
 apply(df[,1:3], 2, range) # Comprobar el rango de las variables
 centers
 
@@ -252,12 +255,7 @@ hist_info <- hist(SubFrame2$price,
 
 hist_info$density <- hist_info$counts /    # Compute density values
   sum(hist_info$counts) * 100
-plot(hist_info, main="Precios de los vinos del dataset completo",
-     xlab="Euros (€)",
-     xlim=c(0,5000), freq = FALSE)   
-
 hist_info$density <- cumsum(hist_info$density) 
-plot(hist_info)
 hist_info
 
 hist(df_rioja$price)

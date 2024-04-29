@@ -120,7 +120,8 @@ qqline(arima_semana_3$residuals)
 arima_semana_2.predict <- predict(arima_semana_2, n.ahead=24)
 plot(precios_semana, xlab = "Tiempo (días)",
      ylab = "Precios Excedente Eléctrico (€)",
-     xlim = c(8, 13))
+     xlim = c(8, 13),
+     main="Predicción del Modelo Ajustado Manualmente")
 lines(arima_semana_2.predict$pred, col=2)
 lines(arima_semana_2.predict$pred+1.96*arima_semana_2.predict$se, col=3, lty=2)
 lines(arima_semana_2.predict$pred-1.96*arima_semana_2.predict$se, col=3, lty=2)
@@ -130,7 +131,8 @@ arima_semana_3.predict <- predict(arima_semana_3, n.ahead=24)
 plot(precios_semana, xlab = "Tiempo (días)",
      ylab = "Precios Excedente Eléctrico (€)",
      #ylim = c(1, 50),
-     xlim = c(8, 13))
+     xlim = c(8, 13),
+     main="Predicción del Modelo Ajustado con Autoarima")
 lines(arima_semana_3.predict$pred, col=2)
 lines(arima_semana_3.predict$pred+1.96*arima_semana_3.predict$se, col=3, lty=2)
 lines(arima_semana_3.predict$pred-1.96*arima_semana_3.predict$se, col=3, lty=2)
@@ -140,12 +142,13 @@ lines(precios_semana_test, col=4)
 
 # a)	Cargue el archivo de datos 'precios_excedente_peninsula_mes.xls' y guárdelo en un dataframe.
 precios_mes_input <- as.data.frame(read_excel("Ficheros/precios_excedente_peninsula_mes.xlsx"))
+head(precios_mes_input)
 
 # b)	¿Cuántos días de datos hay disponibles? ¿Con qué resolución? Guarde cuatro semanas de 
 #     datos para entrenamiento, y el resto como datos de test
 
 # Hay 31 días de datos en el dataset, con una resolución de una hora, es decir, 24 datos por día.
-# Un 20% de los datos supone reservar para test el último de los 5 días.
+# Para el entrenamiento guardaremos 28 días, y para testing 3.
 precios_mes_input_train <- precios_mes_input[1:672,] # 4 semanas para entrenamiento -> 4*7*24=672
 precios_mes_input_test <- precios_mes_input[673:744,] # Los 3 días restantes -> 3*24=72
 precios_mes <- ts(as.numeric(precios_mes_input_train[,2]), start=1, frequency = 24)
@@ -176,6 +179,16 @@ plot(diff(diff(precios_mes,differences=1),lag=168,differences=1), main="d=1, D=1
 abline(a=0, b=0)
 var(diff(diff(precios_mes,differences=1),lag=168,differences=1))
 
+# A la vista de las gráficas de las tres diferenciaciones, y considerando el valor de la varianza 
+# para cada caso, nos decantaremos por el patrón semanal de estacionalidad, dado que la varianza 
+# es la menor y la respuesta presenta un comportamiento más estacionario. Analizando la 
+# serie original, se puede apreciar cómo los precios se reducen considerablemente cada 5 días 
+# (los fines de semana). También por este motivo, es más apropiado considerar el patrón de 
+# estacionalidad semanal, que incluye dentro de su periodo tanto los picos de entre semana, 
+# como los valles de los fines de semana. Un modelo con periodo diario de estacionalidad 
+# tendrá más dificultad para predecir los cambios bruscos correspondientes al paso de viernes
+# a sábado, y de domingo a lunes.
+
 # d)	Realice un ajuste con autoarima con aproximación, y utilice el modelo resultante para 
 #     predecir 3 días de datos. Comente los resultados.
 arima_mes_1 = auto.arima(precios_mes, d=1, D=1, max.order=4, 
@@ -192,7 +205,8 @@ arima_mes_1.predict <- predict(arima_mes_1, n.ahead=72)
 plot(precios_mes, xlab = "Tiempo (días)",
      ylab = "Precios Excedente Eléctrico (€)",
      ylim = c(0, 370),
-     xlim = c(1, 31))
+     xlim = c(1, 31),
+     main = "Predicción del Modelo con Estacionalidad Diaria")
 lines(arima_mes_1.predict$pred, col=2)
 lines(arima_mes_1.predict$pred+1.96*arima_mes_1.predict$se, col=3, lty=2)
 lines(arima_mes_1.predict$pred-1.96*arima_mes_1.predict$se, col=3, lty=2)
@@ -202,7 +216,8 @@ arima_mes_2.predict <- predict(arima_mes_2, n.ahead=72)
 plot(precios_mes_por_semanas, xlab = "Tiempo (días)",
      ylab = "Precios Excedente Eléctrico (€)",
      ylim = c(20, 340),
-     xlim = c(1, 5.4))
+     xlim = c(1, 5.4),
+     main = "Predicción del Modelo con Estacionalidad Semanal")
 lines(arima_mes_2.predict$pred, col=2)
 lines(arima_mes_2.predict$pred+1.96*arima_mes_2.predict$se, col=3, lty=2)
 lines(arima_mes_2.predict$pred-1.96*arima_mes_2.predict$se, col=3, lty=2)
